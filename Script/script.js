@@ -2,11 +2,13 @@ $(function(){
 	let canvas = document.getElementById("canvas");
 	let context = canvas.getContext("2d");
 	let ctx = canvas.getContext("2d");
+	let events = false;
 
 	let options = {
 		width: window.innerWidth,
 		height: window.innerHeight,
-		bitDamage: 10
+		bitDamage: 10,
+		fireDamage: 15
 	}
 
 	canvas.width = options.width;
@@ -54,6 +56,7 @@ $(function(){
 			this.isDown = false;
 
 			this.bitBool = true;
+			this.canFire = true;
 
 			this.hp = 100;
 			this.mp = 100;
@@ -171,6 +174,8 @@ $(function(){
 			this.dx += this.dwidth;
 			if (this.dx >= this.dwidth * 3){
 				this.dx = 0;
+				this.isFoam = false;
+				this.isFightStay = true;
 			}
 		}
 		fightStayAnimation = function(){
@@ -201,11 +206,60 @@ $(function(){
 		}
 	}
 
+	class Fireball{
+		constructor(x, y, rightOrLeft){
+			this.x = x;
+			this.y = y;
+			this.width = 50;
+			this.height = 50;
+			this.dwidth = 80;
+			this.dx = 30 + this.dwidth * 7;
+			this.dy = 0;			
+			this.dheight = 80;
+			this.rightOrLeft = rightOrLeft;
+			this.image = new Image();
+			this.image.src = "Files/explosions.png"
+			this.speed = 5;
+			this.isBoom = false;
+			this.bool = true;
+		}
+		draw = function(){
+			context.drawImage(this.image, this.dx, this.dy, this.dwidth, this.dheight, this.x, this.y, this.width, this.height);
+			this.move();
+			this.border();
+		}
+		move = function(){
+			if (this.rightOrLeft){
+				this.x += this.speed;
+			}
+			else{
+				this.x -= this.speed;
+			}
+		}
+		border = function(){
+			if (this.x <= 0 || this.x + this.width >= options.width || this.y <= 0 || this.y + this.height >= options.height){
+				if (this.bool){
+					this.boom();
+					this.bool = false;					
+				}
+			}
+		}
+		boom = function(){
+			this.speed = 0;
+			this.isBoom = true;
+			this.dx = 0;
+			this.dy = this.dheight * 11;
+			this.y = options.height + 100;
+		}
+	}
+
 	let sprite_1 = new Sprite(200, 400, "Files/Char.png", false);
 	let sprite_2 = new Sprite(options.width - 325, 400, "Files/Char_2.png", true);
 
+	let fireball = [];
+
 	document.addEventListener("keydown", function(e){
-		if (notVictory){
+		if (notVictory == true && events == true){
 			if (e.key == "d" && sprite_1.isLeft == false){
 				sprite_1.isRight = true;
 				sprite_1.isRightOrLeft = false;
@@ -234,11 +288,31 @@ $(function(){
 				sprite_1.isBit = true;
 				sprite_1.bitBool = true;
 			}
+			if (e.key == "t" && sprite_1.isBit == false && sprite_1.isFoam == false && sprite_1.mp >= 20 && sprite_1.canFire == true){
+				sprite_1.dx = 0;
+				sprite_1.isFightStay = false;
+				sprite_1.isRight = false;
+				sprite_1.isLeft = false;
+				sprite_1.isUp = false;
+				sprite_1.isDown = false;
+				sprite_1.isFoam = true;
+				sprite_1.mp -= 25;
+				sprite_1.canFire = false;
+				setTimeout(function(){
+					sprite_1.canFire = true;
+				}, 1000)
+				if (sprite_1.isRightOrLeft){
+					fireball.push(new Fireball(sprite_1.x + 20, sprite_1.y + 30, false));
+				}
+				else{
+					fireball.push(new Fireball(sprite_1.x + sprite_1.width - 60, sprite_1.y + 30, true));
+				}
+			}
 		}
 	});
 
 	document.addEventListener("keyup", function(e){
-		if (notVictory){
+		if (notVictory == true && events == true){
 			if (e.key == "d"){
 			sprite_1.isRight = false;
 			}
@@ -258,7 +332,7 @@ $(function(){
 		}	
 	});
 	document.addEventListener("keydown", function(e){
-		if (notVictory){
+		if (notVictory == true && events == true){
 			if (e.key == "ArrowRight" && sprite_2.isLeft == false){
 				sprite_2.isRight = true;
 				sprite_2.isRightOrLeft = false;
@@ -287,10 +361,30 @@ $(function(){
 				sprite_2.isBit = true;
 				sprite_2.bitBool = true;
 			}
+			if (e.key == "8" && sprite_2.isBit == false && sprite_2.isFoam == false && sprite_2.mp >= 20 && sprite_2.canFire == true){
+				sprite_2.dx = 0;
+				sprite_2.isFightStay = false;
+				sprite_2.isRight = false;
+				sprite_2.isLeft = false;
+				sprite_2.isUp = false;
+				sprite_2.isDown = false;
+				sprite_2.isFoam = true;
+				sprite_2.mp -= 25;
+				sprite_2.canFire = false;
+				setTimeout(function(){
+					sprite_2.canFire = true;
+				}, 1000)
+				if (sprite_2.isRightOrLeft){
+					fireball.push(new Fireball(sprite_2.x + 20, sprite_2.y + 30, false));
+				}
+				else{
+					fireball.push(new Fireball(sprite_2.x + sprite_2.width - 60, sprite_2.y + 30, true));
+				}
+			}
 		}
 	});
 	document.addEventListener("keyup", function(e){
-		if (notVictory){
+		if (notVictory == true && events == true){
 			if (e.key == "ArrowRight"){
 				sprite_2.isRight = false;
 			}
@@ -310,10 +404,19 @@ $(function(){
 		}	
 	});
 
-	let spriteAnimation = setInterval(function(){
+	let gameAnimation = setInterval(function(){
 		sprite_1.animationDraw();
 		sprite_2.animationDraw();
 	}, 150);
+
+	let manaRegeneration = setInterval(function(){
+		if (sprite_1.mp < 100){
+			sprite_1.mp++;
+		}
+		if (sprite_2.mp < 100){
+			sprite_2.mp++;
+		}
+	}, 400);
 
 	let bitSound = new Audio();
 	bitSound.src = "Files/PunchSounds/qubodupPunch02.flac";
@@ -403,12 +506,52 @@ $(function(){
 	let notVictory = true;
 	let victoryImage = new Image();
 	victoryImage.src = "Files/5daf0c368901416df3c7b521.png";
+	let boomSound = new Audio();
+	boomSound.src = "Files/PunchSounds/qubodupPunch05.flac";
+
+	function boom(){
+		for (let i = 0; i < fireball.length; i++){
+			let centerY = fireball[i].y + (fireball[i].height / 2)
+			if (fireball[i].rightOrLeft == true){
+				if (fireball[i].x + fireball[i].width >= sprite_1.x + 95 && centerY >= sprite_1.y && centerY <= sprite_1.y + sprite_1.height - 100 && fireball[i].x <= sprite_1.x + sprite_1.width - 100){
+					sprite_1.hp -= options.fireDamage;
+					boomSound.play();
+					fireball[i].boom();
+				}
+			}
+			else{
+				if (fireball[i].x <= sprite_1.x + sprite_1.width - 95 && centerY >= sprite_1.y && centerY <= sprite_1.y + sprite_1.height - 100 && fireball[i].x + fireball[i].width >= sprite_1.x + 100){
+					sprite_1.hp -= options.fireDamage;
+					boomSound.play();
+					fireball[i].boom();
+				}
+			}
+			if (fireball[i].rightOrLeft == true){
+				if (fireball[i].x + fireball[i].width >= sprite_2.x + 95 && centerY >= sprite_2.y && centerY <= sprite_2.y + sprite_2.height - 100 && fireball[i].x <= sprite_2.x + sprite_2.width - 100){
+					sprite_2.hp -= options.fireDamage;
+					boomSound.play();
+					fireball[i].boom();
+				}
+			}
+			else{
+				if (fireball[i].x < sprite_2.x + sprite_2.width - 95 && centerY >= sprite_2.y && centerY <= sprite_2.y + sprite_2.height - 100 && fireball[i].x + fireball[i].width >= sprite_2.x + 100){
+					sprite_2.hp -= options.fireDamage;
+					boomSound.play();
+					fireball[i].boom();
+				}
+			}
+		}
+	}
 
 	function game(){
 		drawBG();
 		lifeDraw();
 		sprite_1.draw();
 		sprite_2.draw();
+		boom();
+		for (let i = 0; i < fireball.length; i++){
+			fireball[i].draw();
+		}
 		bit();
 		if (sprite_1.hp <= 0 && notVictory == true){
 			sprite_1.isBow = true;
@@ -417,6 +560,24 @@ $(function(){
 		if (sprite_2.hp <= 0 && notVictory == true){
 			sprite_2.isBow = true;
 			notVictory = false;
+			sprite_1.isFightStay = true;
+			sprite_1.isRight = false;
+			sprite_1.isLeft = false;
+			sprite_1.isUp = false;
+			sprite_1.isDown = false;
+			sprite_1.isFoam = false;
+			sprite_1.isRun = false;
+			sprite_2.isFightStay = true;
+			sprite_2.isRight = false;
+			sprite_2.isLeft = false;
+			sprite_2.isUp = false;
+			sprite_2.isDown = false;
+			sprite_2.isFoam = false;
+			sprite_2.isRun = false;
+		}
+		if (events == false){
+			context.font = "30px Verdana";
+			context.fillText("Для начала игры нажмите Enter", 420, options.height / 2);
 		}
 		if (notVictory == false){
 			context.drawImage(victoryImage, options.width - victoryImage.width / 2, options.height - victoryImage / 2);
@@ -426,6 +587,14 @@ $(function(){
 		}
 		interval = window.requestAnimationFrame(game);
 	}
-
+	let music = new Audio();
+	music.src = "Files/Fonovaya_muzyka_Mortal_Kombat_(mp3top.top).mp3";
+	music.loop = true;
+	document.addEventListener("keydown", function(e){
+		if (e.key == "Enter"){
+			music.play();
+			events = true;
+		}
+	});
 	game();
 });
