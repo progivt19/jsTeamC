@@ -5,7 +5,8 @@ $(function(){
 
 	let options = {
 		width: window.innerWidth,
-		height: window.innerHeight
+		height: window.innerHeight,
+		bitDamage: 10
 	}
 
 	canvas.width = options.width;
@@ -24,7 +25,7 @@ $(function(){
 	}
 
 	class Sprite{
-		constructor(x, y){
+		constructor(x, y, src, isRightOrLeft){
 			this.x = x;
 			this.y = y;
 			this.dwidth = 50;
@@ -34,16 +35,16 @@ $(function(){
 			this.width = 210;
 			this.height = 220;
 			this.image = new Image();
-			this.image.src = "Files/Char.png";
+			this.image.src = src;
 
-			this.isRightOrLeft = false;
+			this.isRightOrLeft = isRightOrLeft;
 			this.isStay = false;
-			this.isRun = true;
+			this.isRun = false;
 			this.isBit = false;
 			this.isBow = false;
 			this.isStrike = false;
 			this.isFoam = false;
-			this.isFightStay = false;
+			this.isFightStay = true;
 			this.isFightWalk = false;
 
 			this.speed = 2;
@@ -51,20 +52,26 @@ $(function(){
 			this.isLeft = false;
 			this.isUp = false;
 			this.isDown = false;
+
+			this.bitBool = true;
+
+			this.hp = 100;
+			this.mp = 100;
 		}
 		draw = function(){
 			if (this.isRightOrLeft){
-				context.translate((sprite.x + sprite.width / 2), 0);
+				context.translate((this.x + this.width / 2), 0);
 				context.scale(-1, 1);
-				context.translate(-(sprite.x + sprite.width / 2), 0);
+				context.translate(-(this.x + this.width / 2), 0);
 			}
 			context.drawImage(this.image, this.dx, this.dy, this.dwidth, this.dheight, this.x, this.y, this.width, this.height);
 			if (this.isRightOrLeft){
-				context.translate((sprite.x + sprite.width / 2), 0);
+				context.translate((this.x + this.width / 2), 0);
 				context.scale(-1, 1);
-				context.translate(-(sprite.x + sprite.width / 2), 0);
+				context.translate(-(this.x + this.width / 2), 0);
 			}
 			this.move();
+			this.border();
 		}
 		move = function(){
 			if (this.isRight){
@@ -106,6 +113,20 @@ $(function(){
 				this.fightWalkAnimation();
 			}
 		}
+		border = function(){
+			if (this.x <= -70){
+				this.x = -70;
+			}
+			if (this.x + this.width >= options.width + 70){
+				this.x = options.width - this.width + 70;
+			}
+			if (this.y < options.height - options.height * 0.5){
+				this.y = options.height - options.height * 0.5;
+			}
+			if (this.y + this.height > options.height + 50){
+				this.y = options.height - this.height + 50;
+			}
+		}
 		stayAnimation = function(){
 			this.dy = this.dheight * 7;
 			this.dx += this.dwidth;
@@ -121,17 +142,21 @@ $(function(){
 			}
 		}
 		bitAnimation = function(){
-			this.dy = this.dheight * 2;
+			this.dy = this.dheight * 2 + 8;
 			this.dx += this.dwidth;
 			if (this.dx >= this.dwidth * 4){
 				this.dx = 0;
+				this.isBit = false;
+				this.isFightStay = true;
 			}
 		}
 		bowAnimation = function(){
 			this.dy = this.dheight;
 			this.dx += this.dwidth;
-			if (this.dx >= this.dwidth * 5){
+			if (this.dx >= this.dwidth * 4){
 				this.dx = 0;
+				this.isBow = false;
+				this.isFightStay = false;
 			}
 		}
 		strikeAnimation = function(){
@@ -175,55 +200,231 @@ $(function(){
 			this.y += this.speed;
 		}
 	}
-	let sprite = new Sprite(200, 400);
+
+	let sprite_1 = new Sprite(200, 400, "Files/Char.png", false);
+	let sprite_2 = new Sprite(options.width - 325, 400, "Files/Char_2.png", true);
 
 	document.addEventListener("keydown", function(e){
-		if (e.key == "d"){
-			sprite.isRight = true;
-			sprite.isRightOrLeft = false;
+		if (notVictory){
+			if (e.key == "d" && sprite_1.isLeft == false){
+				sprite_1.isRight = true;
+				sprite_1.isRightOrLeft = false;
+			}
+			if (e.key == "a" && sprite_1.isRight == false){
+				sprite_1.isLeft = true;
+				sprite_1.isRightOrLeft = true;
+			}
+			if (e.key == "w" && sprite_1.isDown == false){
+				sprite_1.isUp = true;
+			}
+			if (e.key == "s" && sprite_1.isUp == false){
+				sprite_1.isDown = true;
+			}
+			if ((e.key == "d" || e.key == "a" || e.key == "w" || e.key == "s") && sprite_1.isBit == false){
+				sprite_1.isFightStay = false;
+				sprite_1.isRun = true;
+			}
+			if (e.key == "r" && sprite_1.isBit == false){
+				sprite_1.dx = 0;
+				sprite_1.isFightStay = false;
+				sprite_1.isRight = false;
+				sprite_1.isLeft = false;
+				sprite_1.isUp = false;
+				sprite_1.isDown = false;
+				sprite_1.isBit = true;
+				sprite_1.bitBool = true;
+			}
 		}
-		if (e.key == "a"){
-			sprite.isLeft = true;
-			sprite.isRightOrLeft = true;
-		}
-		if (e.key == "w"){
-			sprite.isUp = true;
-		}
-		if (e.key == "s"){
-			sprite.isDown = true;
-		}
-		if (e.key == "d" || e.key == "a" || e.key == "w" || e.key == "s"){
-			sprite.isFightStay = false;
-			sprite.isRun = true;
+	});
+
+	document.addEventListener("keyup", function(e){
+		if (notVictory){
+			if (e.key == "d"){
+			sprite_1.isRight = false;
+			}
+			if (e.key == "a"){
+				sprite_1.isLeft = false;
+			}
+			if (e.key == "w"){
+				sprite_1.isUp = false;
+			}
+			if (e.key == "s"){
+				sprite_1.isDown = false;
+			}
+			if (sprite_1.isRight == false && sprite_1.isLeft == false && sprite_1.isUp == false && sprite_1.isDown == false && sprite_1.isBit == false){
+				sprite_1.isRun = false;
+				sprite_1.isFightStay = true;
+			}
+		}	
+	});
+	document.addEventListener("keydown", function(e){
+		if (notVictory){
+			if (e.key == "ArrowRight" && sprite_2.isLeft == false){
+				sprite_2.isRight = true;
+				sprite_2.isRightOrLeft = false;
+			}
+			if (e.key == "ArrowLeft" && sprite_2.isRight == false){
+				sprite_2.isLeft = true;
+				sprite_2.isRightOrLeft = true;
+			}
+			if (e.key == "ArrowUp" && sprite_2.isDown == false){
+				sprite_2.isUp = true;
+			}
+			if (e.key == "ArrowDown" && sprite_2.isUp == false){
+				sprite_2.isDown = true;
+			}
+			if ((e.key == "ArrowRight" || e.key == "ArrowLeft" || e.key == "ArrowUp" || e.key == "ArrowDown") && sprite_2.isBit == false){
+				sprite_2.isFightStay = false;
+				sprite_2.isRun = true;
+			}
+			if (e.key == "7" && sprite_2.isBit == false){
+				sprite_2.dx = 0;
+				sprite_2.isFightStay = false;
+				sprite_2.isRight = false;
+				sprite_2.isLeft = false;
+				sprite_2.isUp = false;
+				sprite_2.isDown = false;
+				sprite_2.isBit = true;
+				sprite_2.bitBool = true;
+			}
 		}
 	});
 	document.addEventListener("keyup", function(e){
-		if (e.key == "d"){
-			sprite.isRight = false;
-		}
-		if (e.key == "a"){
-			sprite.isLeft = false;
-		}
-		if (e.key == "w"){
-			sprite.isUp = false;
-		}
-		if (e.key == "s"){
-			sprite.isDown = false;
-		}
-		if (sprite.isRight == false && sprite.isLeft == false && sprite.isUp == false && sprite.isDown == false){
-			sprite.isRun = false;
-			sprite.isFightStay = true;
-		}
+		if (notVictory){
+			if (e.key == "ArrowRight"){
+				sprite_2.isRight = false;
+			}
+			if (e.key == "ArrowLeft"){
+				sprite_2.isLeft = false;
+			}
+			if (e.key == "ArrowUp"){
+				sprite_2.isUp = false;
+			}
+			if (e.key == "ArrowDown"){
+				sprite_2.isDown = false;
+			}
+			if (sprite_2.isRight == false && sprite_2.isLeft == false && sprite_2.isUp == false && sprite_2.isDown == false && sprite_2.isBit == false){
+				sprite_2.isRun = false;
+				sprite_2.isFightStay = true;
+			}
+		}	
 	});
 
 	let spriteAnimation = setInterval(function(){
-		sprite.animationDraw();
+		sprite_1.animationDraw();
+		sprite_2.animationDraw();
 	}, 150);
+
+	let bitSound = new Audio();
+	bitSound.src = "Files/PunchSounds/qubodupPunch02.flac";
+
+	function bit(){
+		if (sprite_1.isBit == true && sprite_1.bitBool == true){
+			sprite_1.bitBool = false;
+			let yCenter = (sprite_1.y * 2 + sprite_1.height) / 2;
+			if (yCenter > sprite_2.y + 75 && yCenter < sprite_2.y + sprite_2.height - 75){
+				if (sprite_1.isRightOrLeft){
+					if (sprite_1.x < sprite_2.x + sprite_2.width - 140 && sprite_1.x > sprite_2.x + 10){
+						sprite_2.x -= 40;
+						sprite_2.hp -= 10;
+						bitSound.play();
+					}
+				}
+				else{
+					if (sprite_1.x + sprite_1.width - 140 > sprite_2.x && sprite_1.x + sprite_1.width < sprite_2.x + sprite_2.width - 20){
+						sprite_2.x += 40;
+						sprite_2.hp -= 10;
+						bitSound.play();
+					}
+
+				}
+			}
+		}
+		if (sprite_2.isBit == true && sprite_2.bitBool == true){
+			sprite_2.bitBool = false;
+			let yCenter = (sprite_2.y * 2 + sprite_2.height) / 2;
+			if (yCenter > sprite_1.y + 75 && yCenter < sprite_1.y + sprite_1.height - 75){
+				if (sprite_2.isRightOrLeft){
+					if (sprite_2.x < sprite_1.x + sprite_1.width - 140 && sprite_2.x > sprite_1.x + 10){
+						sprite_1.x -= 40;
+						sprite_1.hp -= options.bitDamage;
+						bitSound.play();
+					}
+				}
+				else{
+					if (sprite_2.x + sprite_2.width - 140 > sprite_1.x && sprite_2.x + sprite_2.width < sprite_1.x + sprite_1.width - 20){
+						sprite_1.x += 40;
+						sprite_1.hp -= options.bitDamage;
+						bitSound.play();
+					}
+
+				}
+			}
+		}
+	}
+
+	function lifeDraw(){
+		let hp1 = (sprite_1.hp * options.width * 0.3) / 100;
+		let hp2 = (sprite_2.hp * options.width * 0.3) / 100;
+		let mp1 = (sprite_1.mp * options.width * 0.3) / 100;
+		let mp2 = (sprite_2.mp * options.width * 0.3) / 100;
+		if (hp1 <= 0){
+			hp1 = 0;
+		}
+		if (hp2 <= 0){
+			hp2 = 0;
+		}
+		if (mp1 <= 0){
+			mp1 = 0;
+		}
+		if (mp2 <= 0){
+			mp2 = 0;
+		}
+		context.beginPath();
+		context.strokeStyle = "red";
+		context.lineWidth = options.height * 0.04;
+		context.moveTo(options.width * 0.1, options.height * 0.1);
+		context.lineTo(options.width * 0.1 + hp1, options.height * 0.1);
+		context.moveTo(options.width * 0.6, options.height * 0.1);
+		context.lineTo(options.width * 0.6 + hp2, options.height * 0.1);
+		context.stroke();
+		context.closePath();
+		context.beginPath();
+		context.strokeStyle = "blue";
+		context.moveTo(options.width * 0.1, options.height * 0.15);
+		context.lineTo(options.width * 0.1 + mp1, options.height * 0.15);
+		context.moveTo(options.width * 0.6, options.height * 0.15);
+		context.lineTo(options.width * 0.6 + mp2, options.height * 0.15);
+		context.stroke();
+		context.closePath();
+	}
+
+	let interval;
+	let notVictory = true;
+	let victoryImage = new Image();
+	victoryImage.src = "Files/5daf0c368901416df3c7b521.png";
 
 	function game(){
 		drawBG();
-		sprite.draw();
-		window.requestAnimationFrame(game);
+		lifeDraw();
+		sprite_1.draw();
+		sprite_2.draw();
+		bit();
+		if (sprite_1.hp <= 0 && notVictory == true){
+			sprite_1.isBow = true;
+			notVictory = false;
+		}
+		if (sprite_2.hp <= 0 && notVictory == true){
+			sprite_2.isBow = true;
+			notVictory = false;
+		}
+		if (notVictory == false){
+			context.drawImage(victoryImage, options.width - victoryImage.width / 2, options.height - victoryImage / 2);
+		}
+		if (notVictory == false){
+			context.drawImage(victoryImage, options.width * 0.28, options.height * 0.2);
+		}
+		interval = window.requestAnimationFrame(game);
 	}
 
 	game();
